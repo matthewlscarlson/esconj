@@ -1,0 +1,153 @@
+#!/bin/bash
+# Title       : esconj
+# Description : Conjugates Spanish verbs in the terminal.
+# Author		  : Matthew Carlson <matt@mcarlson.xyz>
+# Date        : 2020-09-03
+# Version     : 0.1
+# Usage		    : esconj [options]
+# Notes       : Should handle common verbs. No guarantees for obscure verbs.
+
+#    Copyright (C) 2020 Matthew Carlson <matt@mcarlson.xyz>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+#########################
+# Check if verb is valid.
+# Arguments:
+#   Verb to check
+#########################
+check() {
+  local verb
+  verb="$(echo $1 | tr '[:upper:]' '[:lower:]')"
+
+  [[ ! "${verb}" =~ [a-z]*(ar|er|ir)(se)*$ ]] \
+    && printf "Verb is in incorrect format.\nVerb must be a word ending in -ar, -er, -ir (with -se in the case of reflexives)." \
+    && exit
+
+  local suffix
+  suffix="${verb: -2}"
+
+  case "${suffix}" in
+    se)
+      search_dict "${verb}"
+      [[ $? -eq 1 ]] \
+      && conjugate "${verb}" \
+      || check "${verb::-2}"
+      ;;
+    ar|er|ir)
+      search_dict "${verb}"
+      conjugate "${verb}"
+      ;;
+  esac
+}
+
+read_csv() { rows="$(awk -v verb=$1 -F '","|^"|"$' '{sub("^\"","")} $1==verb' verbs.csv)" ; }
+
+conjugate() {
+  declare -A conjugations
+  declare -a tenses
+
+  read_csv "$1"
+
+  for i in {1..18}; do
+    tenses[$i]=$(for j in 5 8 9 10 11 12 13; do
+      conjugations[$i,$j]="$(echo "${rows}" | awk -v col=$j -F '","|^"|"$' '{print $col}' | head -$i | tail +$i)"
+      [[ -n "${conjugations[$i,$j]}" ]] && echo "${conjugations[$i,$j]}" || echo "-"
+    done)
+  done
+
+  bold=$(tput bold)
+  normal=$(tput sgr0)
+  blue=$(tput setaf 4)
+
+  print_tense "Indicativo"
+  print_mood 1 5
+
+  print_tense "Subjuntivo"
+  print_mood 11 3
+
+  print_tense "Aspecto Perfectivo"
+  print_mood 6 5
+
+  print_tense "Aspecto Perfectivo de Subjuntivo"
+  print_mood 14 3
+
+  print_tense "Imperativo (Afirmativo y Negativo)"
+  print_mood 17 2
+}
+
+get_words() { words="$(awk -v col=$1 -F '","|^"|"$' '{sub("^\"","")} {print $col}' verbs.csv)" ; }
+
+print_mood() {
+  local tmp
+  tmp=''
+
+  for i in "${tenses[@]:$1:$2}"; do
+    tmp=$(paste <(printf '%b\n' "$tmp") <(printf "$i") | column -s $'\t' -t)
+  done
+
+  paste <(printf '\e[1;34m%s\e[m\n' '' \
+                                    "yo" \
+                                    "tu" \
+                                    "él/ella/Ud." \
+                                    "nosotros" \
+                                    "vosotros" \
+                                    "ellos/ellas/Uds.") \
+  <(printf '%b\n' "$tmp") | column -s $'\t' -t
+
+  printf '\n'
+}
+
+print_tense() { printf "${blue}${bold}$1\n" ; }
+
+search_dict() {
+  [[ $(grep -w "$1" <<< "${words}") ]] \
+    && return 1 \
+    || printf "Verb not found.\nIf you entered a reflexive verb, try without the -se ending." && exit
+}
+
+usage() {
+  printf "Usage: esconj [options]\n"
+  printf "Options:
+  -c, --conjugate  Conjugate verb
+  -h, --help       Print this message and exit\n"
+}
+
+main() {
+  [[ $# -eq 0 ]] && usage
+
+  get_words
+
+  for arg in "$@"; do
+    [[ "${arg:0:1}" = '-' ]] || continue
+
+    case "$1" in
+      -c | --conjugate)
+        check "$2"
+        shift 2
+        ;;
+      -h | --help)
+        usage
+        break
+        ;;
+      *)
+        echo "Invalid argument: $1"
+        usage
+        break
+        ;;
+    esac
+  done
+}
+
+main "$@"

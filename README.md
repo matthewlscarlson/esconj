@@ -7,7 +7,7 @@ Verbs file from here: https://github.com/ghidinelli/fred-jehle-spanish-verbs. If
 
 # Installation
 ```shell
-$ git clone https://github.com/mslcarlson/esconj/
+$ git clone https://github.com/mlscarlson/esconj/
 $ cd esconj
 $ sudo ./install.sh
 ```

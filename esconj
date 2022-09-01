@@ -1,13 +1,13 @@
 #!/bin/bash
 # Title       : esconj
 # Description : Conjugates Spanish verbs in the terminal.
-# Author	  : Matthew Carlson <matt@mcarlson.xyz>
+# Author	  : Matthew Carlson <matt@mattcarlson.org>
 # Date        : 2020-09-03
 # Version     : 0.1
 # Usage		  : esconj [options]
 # Notes       : Should handle common verbs. No guarantees for obscure verbs.
 
-#    Copyright (C) 2020 Matthew Carlson <matt@mcarlson.xyz>
+#    Copyright (C) 2020 Matthew Carlson <matt@mattcarlson.org>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
